@@ -50,8 +50,6 @@ Hauptklasse (VocabularyTrainer): Initialisiert die GUI, verwaltet den Zustand un
  Besonders hervorzuheben ist die neue Funktionalität der manuellen Abfrage, die sowohl die Datenbank als auch den
  Online-Dienst nutzt und dabei die gelernten Wörter direkt speichert.
 
-Ich habe das gesamte Programm in einer einzigen Python-Datei namens vokabeltrainer_v2.py zusammengefasst.
-
 Verbesserungen in Version SpT2
 
 SQLite-Persistenz: Die VOCABULARY-Datenbankstruktur wurde durch die SQLite-Datenbank vokabeln.db ersetzt.
@@ -89,3 +87,82 @@ Use Control + Shift + m to toggle the tab key moving focus. Alternatively, use e
 Attach files by dragging & dropping, selecting or pasting them.
 New File at / · Rliegard/Sprachtrainer
 
+#########################################################################################################################################################################################################################################
+
+Wichtigste Verbesserungen in SpT3:
+Behoben: Korrekte Datenbank-Einfügung (Critical Fix)
+
+Die Methode check_db_and_get_translation wurde korrigiert, um die Online-Übersetzung korrekt in die Datenbank zu speichern.
+
+Vorher (SpT2): Die SQL-Anweisung hatte eine unklare Anzahl von Parametern.
+
+Jetzt (SpT3): Die INSERT OR IGNORE Anweisung verwendet nun korrekt fünf Platzhalter (?,?,?,?,?) und übergibt präzise fünf Werte (word, src_lang, trg_lang, online_translation, 'Online').
+Das verhindert potenzielle Laufzeitfehler beim Speichern neuer Online-Vokabeln.
+
+Verbessert: Manuelle Suche und Fehlerhandling
+
+Die Funktion find_manual_translation ist nun viel robuster und benutzerfreundlicher:
+
+Fokus-Management: Der Cursor wird nun nach jeder Suche (egal ob erfolgreich oder fehlerhaft) korrekt auf das Eingabefeld zurückgesetzt (self.manual_entry.focus()).
+
+Leere Eingabe: Die Funktion prüft sofort, ob das Eingabefeld leer ist, und kehrt zurück, ohne eine unnötige Datenbankabfrage zu starten.
+
+Detailliertere Fehlermeldungen: Die Fehlermeldung, falls die Online-Übersetzung deaktiviert ist, ist nun viel klarer: ❌ Übersetzung nicht gefunden. Online-Übersetzung ist deaktiviert (googletrans fehlt oder Fehler).
+
+Bereinigt: Hotkeys-Logik
+
+Die überflüssige und verwirrende Hotkey-Zuweisung für <Control-Key-d> (Deutsch -> Englisch) wurde aus der __init__ Methode entfernt, da diese Zuweisung ohnehin doppelt mit <Control-Shift-E> belegt war
+
+########################################################################################################################################################################################################################################
+
+
+Zusammenfassung der Verbesserungen von SpT3 zu SpT4
+Die Hauptverbesserungen in SpT4 drehen sich um die Integration der Sprachausgabe (Text-to-Speech, TTS), die Erweiterung der Benutzeroberfläche und die Strukturierung des Codes für mehr Stabilität.
+SpT4 (Verbesserung)Kernfunktion
+Fügt asynchrone Sprachausgabe (TTS) hinzu.
+Architektur (TTS)
+Nutzt pyttsx3 und den threading-Modul, um die TTS-Ausgabe nicht-blockierend auszuführen.
+TTS-Implementierung
+Die TTS-Engine wird innerhalb des Threads initialisiert und gestoppt, um Ressourcen freizugeben und Deadlocks zu vermeiden (eine kritische Verbesserung für pyttsx3).
+Benutzererfahrung 
+Modernisiertes Design (style.theme_use('clam')), verbesserte Button-Styles.
+Interaktion
+Zusätzlicher TTS-Button (🔊 Vorlesen), der nach dem Prüfen der Antwort aktiviert wird, um die korrekte Lösung zu hören.
+Visuelles Feedback
+Hervorhebung der Buttons (Accent.TButton vs. Manual.TButton) nach der Prüfung, um den nächsten logischen Schritt
+(Prüfen oder Nächstes Wort) zu signalisieren.
+Initialdaten
+Erweiterung der Initialdaten um weitere Sprachpaare (Italienisch-Deutsch, Französisch-Englisch),
+um die Mehrsprachigkeit zu demonstrieren.
+Die größte architektonische Änderung: 
+Threading für TTSDie Einführung der TTS-Funktionalität in SpT4 ist nicht trivial.
+Da die pyttsx3.runAndWait()-Methode das Hauptprogramm blockieren würde, wurde die gesamte Sprachlogik in einen separaten Thread (_tts_thread) ausgelagert.
+
+Kann nur einmal eine Sprachausgabe tätigen, muss über arbeitet werden
+
+#########################################################################################################################################################################################################################################
+
+SpT5
+Versuch es für Android-Sasteme nutzbar zu machen
+Ubuntu auf Windows lauffähig zu machen
+Nicht ganz ausgereift (Testversuch)
+
+#########################################################################################################################################################################################################################################
+
+SpT6
+Die Hauptunterschiede und Verbesserungen konzentrieren sich auf die Behandlung des Fensterschließens und des Beenden-Vorgangs der App.
+
+Sauberes Beenden (on_closing)
+NEU: Die Methode on_closing wird hinzugefügt. Sie ruft self.master.destroy() und sys.exit() auf, was eine garantierte und saubere Beendigung aller Prozesse (auch Daemon-Threads) sicherstellt
+
+Fensterprotokoll
+NEU: self.master.protocol("WM_DELETE_WINDOW", self.on_closing) wird hinzugefügt. Dies fängt den Klick auf das standardmäßige Schließ-X des Fensters ab und leitet ihn an die neue, saubere on_closing-Methode weiter.
+
+NEU: Ein auffälliger "❌ Beenden (Ctrl+Q)" Button wird in der oberen rechten Ecke (row=0, column=1) hinzugefügt und mit dem neuen Exit.TButton-Style (rot) versehen.
+
+NEU: Der Style Exit.TButton (#EF4444 rot) wird für den neuen Beenden-Button definiert.
+
+Das Problem, das es nur einmal eine Sprachausgabe gibt ist behoben worden!! 
+#########################################################################################################################################################################################################################################
+
+#########################################################################################################################################################################################################################################
