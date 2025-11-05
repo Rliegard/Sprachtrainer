@@ -1,3 +1,39 @@
+
+##############################################################################################
+# Vokabeltrainer (Vocabulary Trainer) 📈
+# ==============================================================================
+#
+# Eine interaktive Desktop-Anwendung (GUI basiert auf Tkinter) zum Üben und
+# Nachschlagen von Vokabeln. Die Anwendung verwendet eine lokale **SQLite-Datenbank**
+# zur persistenten Speicherung der Vokabelpaare und bietet optional die
+# Online-Übersetzungsfunktion (Googletrans).
+#
+# **Neu in SpT6: Implementierung von Benutzerprofilen und einer detaillierten
+# Lernstatistik zur Verfolgung des Fortschritts.**
+#
+# Sprachen: Deutsch, Englisch, Italienisch, Spanisch, Französisch, + weitere
+# Hotkeys:  Sprachpaare schnell wechseln (z.B. Strg+E für Englisch -> Deutsch)
+#           Space zum Abrufen des nächsten Wortes.
+#           F5 zur Aktualisierung der Vokabelliste.
+#           **Strg+S für den Statistik-Dialog.**
+#
+# ------------------------------------------------------------------------------
+# ABHÄNGIGKEITEN & VORAUSSETZUNGEN
+# ------------------------------------------------------------------------------
+#
+# 1. Tkinter (Standard in den meisten Python-Distributionen)
+# 2. SQLite3 (Standard in Python)
+# 3. Googletrans (Optional für Online-Übersetzung)
+#
+# Installation für Online-Übersetzung:
+# pip install googletrans==4.0.0-rc1
+#
+# ------------------------------------------------------------------------------
+# AUTOR: Rainer Liegard
+# ERSTELLT AM: **06.11.2025**
+# VERSION: **SpT6**
+##############################################################################################
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import random

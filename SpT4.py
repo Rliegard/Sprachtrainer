@@ -1,16 +1,18 @@
+
 ##############################################################################################
-# Vokabeltrainer (Vocabulary Trainer)
+# Vokabeltrainer (Vocabulary Trainer) 🧠
 # ==============================================================================
 #
 # Eine interaktive Desktop-Anwendung (GUI basiert auf Tkinter) zum Üben und
 # Nachschlagen von Vokabeln in verschiedenen Sprachen. Die Anwendung verwendet
-# eine lokale SQLite-Datenbank zur persistenten Speicherung der Vokabelpaare
-# und bietet optional eine Online-Übersetzungsfunktion (Googletrans), um
+# eine lokale **SQLite-Datenbank** zur persistenten Speicherung der Vokabelpaare
+# und bietet optional eine **Online-Übersetzungsfunktion (Googletrans)**, um
 # Vokabeln dynamisch zur Datenbank hinzuzufügen, falls diese fehlen.
 #
-# Sprachen: Deutsch, Englisch, Italienisch, Spanisch, Französisch
-# Hotkeys:  Sprachpaare schnell wechseln (z.B. Strg+E für Englisch -> Deutsch)
-#           Space zum Abrufen des nächsten Wortes.
+# Sprachen: Deutsch, Englisch, Italienisch, Spanisch, Französisch, **+ weitere**
+# Hotkeys:  Sprachpaare schnell wechseln (z.B. **Strg+E** für Englisch -> Deutsch)
+#           **Space** zum Abrufen des nächsten Wortes.
+#           **F5** zur Aktualisierung der Vokabelliste.
 #
 # ------------------------------------------------------------------------------
 # ABHÄNGIGKEITEN & VORAUSSETZUNGEN
@@ -25,30 +27,30 @@
 #
 # ------------------------------------------------------------------------------
 # AUTOR: Rainer Liegard
-# ERSTELLT AM: 03.11.2025
-# VERSION: SpT3
-################################################################################################
-
+# ERSTELLT AM: **04.11.2025**
+# VERSION: **SpT4**
+##############################################################################################
 
 import tkinter as tk
 from tkinter import ttk, messagebox
 import random
 import sqlite3
 import os
+import threading
+import sys # Für die saubere Behandlung am Ende
 
 # --- WICHTIG: NEUE TTS IMPORTZEILE ---
 try:
     import pyttsx3
-    TTS_ENGINE = pyttsx3.init()
-    # Einstellungsbeispiel (kann angepasst werden)
-    TTS_ENGINE.setProperty('rate', 150) # Sprechgeschwindigkeit (Wörter pro Minute)
-    # TTS_ENGINE.setProperty('volume', 0.9) # Lautstärke
+    # KEINE globale Initialisierung hier oder in __main__ mehr.
+    # Sie erfolgt nur noch im Thread!
+    TTS_ENGINE = None
     REAL_TTS_ENABLED = True
 except ImportError:
     print("Warnung: pyttsx3 ist nicht installiert. Echte TTS ist deaktiviert. Bitte 'pip install pyttsx3' ausführen.")
     REAL_TTS_ENABLED = False
 except Exception as e:
-    print(f"Warnung: Fehler beim Initialisieren von pyttsx3: {e}. Echte TTS ist deaktiviert.")
+    print(f"Warnung: Fehler beim Importieren von pyttsx3: {e}. Echte TTS ist deaktiviert.")
     REAL_TTS_ENABLED = False
 
 # --- GOOGLETRANS IMPORT ---
@@ -334,46 +336,71 @@ class VocabularyTrainer:
         self.next_button.grid(row=3, column=0, columnspan=2, pady=(10, 5), sticky=(tk.W, tk.E), padx=5)
 
 
-    # --- 4. TTS LOGIK (NUN MIT ECHTER SPRACHAUSGABE ÜBER pyttsx3) ---
+    # --- HILFSFUNKTION FÜR TTS-THREAD (KORREKTUR: NEU-INITIALISIERUNG INNERHALB DES THREADS) ---
+    def _tts_thread(self, solution, lang_code):
+        """
+        Interne Funktion, die in einem separaten Thread ausgeführt wird.
+        Die Engine wird *innerhalb* des Threads initialisiert und gestoppt.
+        """
+        engine = None
+        try:
+            # ***************************************************************
+            # SCHLÜSSELKORREKTUR: Engine nur HIER initialisieren
+            # ***************************************************************
+            engine = pyttsx3.init()
+            engine.setProperty('rate', 150)
+
+            # 1. Stimmen-Setup
+            voices = engine.getProperty('voices')
+            if lang_code:
+                for voice in voices:
+                    # Sucht nach dem Sprachcode in der ID/Namens-Zeichenkette
+                    if lang_code in voice.id.lower() or lang_code in voice.name.lower():
+                        engine.setProperty('voice', voice.id)
+                        break
+
+            # 2. TTS ausführen (blockiert nur diesen Thread)
+            engine.say(solution)
+            engine.runAndWait()
+
+        except Exception as e:
+            # Fehler im Thread abfangen und auf der GUI anzeigen
+            self.master.after(0, lambda: messagebox.showerror("TTS Fehler", f"Konnte das Wort nicht aussprechen: {e}"))
+            print(f"Fehler im TTS-Thread: {e}")
+
+        finally:
+            # 3. Engine sofort stoppen/beenden (wichtig für die Freigabe der Ressourcen)
+            if engine:
+                engine.stop()
+                # engine.driver.endLoop() # Manchmal nötig, aber .stop() sollte reichen
+
+            # 4. Button im Haupt-GUI-Thread wieder aktivieren
+            self.master.after(0, lambda: self.tts_button.config(state=tk.NORMAL))
+
+
+    # --- 4. TTS LOGIK ---
     def speak_solution(self):
         """
-        Gibt die Lösung mit pyttsx3 als echte Sprachausgabe aus.
+        Gibt die Lösung in einem separaten Thread aus.
         """
         if not self.current_solution:
             return
 
-        self.tts_button.config(state=tk.DISABLED) # Button deaktivieren
-
-        if REAL_TTS_ENABLED:
-            try:
-                # Setzen Sie die Sprache für eine bessere Aussprache (optional, abhängig von installierten Stimmen)
-                lang_code = LANG_CODES.get(self.current_target_lang) or LANG_CODES.get(self.current_source_lang)
-
-                # Versuch, eine Stimme mit passendem Sprachcode zu finden
-                voices = TTS_ENGINE.getProperty('voices')
-                # Sucht nach einer Stimme, deren ID den Sprachcode enthält (z.B. 'de' für Deutsch)
-                voice_found = False
-                if lang_code:
-                    for voice in voices:
-                        if lang_code in voice.id.lower():
-                            TTS_ENGINE.setProperty('voice', voice.id)
-                            voice_found = True
-                            break
-
-                # Falls keine passende Stimme gefunden, bleibt die Standardstimme.
-
-                TTS_ENGINE.say(self.current_solution)
-                TTS_ENGINE.runAndWait()
-
-            except Exception as e:
-                messagebox.showerror("TTS Fehler", f"Konnte das Wort nicht aussprechen: {e}")
-                print(f"Fehler bei pyttsx3: {e}")
-        else:
+        if not REAL_TTS_ENABLED:
             messagebox.showinfo("Sprachausgabe (SIMULIERT)",
                                 f"Lösung: '{self.current_solution.capitalize()}'\n\n"
                                 "Für echte TTS bitte 'pip install pyttsx3' ausführen und die App neu starten.")
+            return
 
-        self.tts_button.config(state=tk.NORMAL) # Button wieder aktivieren
+        self.tts_button.config(state=tk.DISABLED)
+
+        # Bestimme den Sprachcode. **Wichtig:** Wir wollen die Zielsprache sprechen.
+        lang_code = LANG_CODES.get(self.current_target_lang)
+
+        # Starte die Sprachausgabe in einem separaten Thread
+        tts_thread = threading.Thread(target=self._tts_thread, args=(self.current_solution.capitalize(), lang_code))
+        tts_thread.daemon = True # Wichtig: Thread beenden, wenn Hauptprogramm beendet
+        tts_thread.start()
 
 
     # --- 5. LOGIK-METHODEN (Datenbank- und Online-Translator-Nutzung) ---
@@ -460,6 +487,11 @@ class VocabularyTrainer:
         """Wählt ein zufälliges Wort basierend auf dem aktuellen Sprachpaar."""
         possible_words = self.fetch_all_words_for_pair()
 
+        # Setzt die Buttons zurück in den normalen Akzentstil
+        self.next_button.config(style='Accent.TButton')
+        self.check_button.config(style='Accent.TButton')
+
+
         self.tts_button.config(state=tk.DISABLED) # TTS Button deaktivieren, bis die Antwort geprüft ist
 
         if not possible_words:
@@ -489,15 +521,23 @@ class VocabularyTrainer:
 
         # Überprüfung: Case-insensitive und Whitespace-tolerant
         if user_answer == clean_solution:
-            self.result_label.config(text="✅ Richtig!", foreground='green')
+            self.result_label.config(text=f"✅ Richtig! Lösung: {self.current_solution.capitalize()}", foreground='green')
             self.tts_button.config(state=tk.NORMAL) # TTS aktivieren
-            self.master.after(1500, self.next_word) # Nach kurzer Verzögerung zum nächsten Wort
+
+            # Hebe den "Nächstes Wort"-Button hervor.
+            self.next_button.config(style='Manual.TButton')
+            self.check_button.config(style='Accent.TButton')
+
         else:
             self.result_label.config(
                 text=f"❌ Falsch. Richtig: {self.current_solution.capitalize()}",
                 foreground='#cc0000'
             )
             self.tts_button.config(state=tk.NORMAL) # TTS aktivieren, um die Lösung zu hören
+            # Hebe den "Prüfen"-Button hervor.
+            self.check_button.config(style='Manual.TButton')
+            self.next_button.config(style='Accent.TButton')
+
 
     def find_manual_translation(self, event=None):
         """Sucht die Übersetzung und nutzt Online-Translator, wenn nötig."""
@@ -541,13 +581,12 @@ class VocabularyTrainer:
 # --- 6. ANWENDUNG STARTEN ---
 if __name__ == "__main__":
     root = tk.Tk()
+
+    # Sicherstellen, dass die globale TTS_ENGINE (falls sie existiert) auf None gesetzt ist.
+    if 'TTS_ENGINE' in globals():
+        TTS_ENGINE = None
+
     app = VocabularyTrainer(root)
 
-    # Sicherstellen, dass die TTS-Engine beendet wird
-    if REAL_TTS_ENABLED:
-        try:
-            root.protocol("WM_DELETE_WINDOW", lambda: [TTS_ENGINE.stop(), root.destroy()])
-        except Exception:
-            root.protocol("WM_DELETE_WINDOW", root.destroy)
-
+    # Hier ist keine Protokoll-Funktion mehr nötig, da die Engine immer im Thread gestoppt wird.
     root.mainloop()
