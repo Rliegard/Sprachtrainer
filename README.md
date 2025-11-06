@@ -224,3 +224,12 @@ Ctrl + [E, I, S, F] für den schnellen Sprachpaarwechsel.
 Startup: Fullscreen Splash Screen beim Start.
 
 ##################################################################################################################################################################################################################################
+
+SpT9
+Vorläufige Endversion
+
+Für "Quellsprache" und "Zielsprache" Dropboxen zur Wahl zwischen Deutsch, Spanisch, Englisch, Französisch und Italienisch hinzugefügt, um Nutzerfreudlichkeit zuverbessern!
+Desweiteren kann man im Vokabel-Manager nun auch Vokabel hinzufügen über den Button "Hinzufügen"
+
+###################################################################################################################################################################################################################################
+
