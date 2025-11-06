@@ -172,3 +172,55 @@ Startbidschirm hinzugefügt.
 Programm startet im Fullscreen-Modus
 
 #########################################################################################################################################################################################################################################
+
+Version: SpT8 (Modifiziert mit Vokabel-Manager)
+SpT8 erweitert die in SpT7  eingeführte Fullscreen-Übungs- und Suchfunktion um ein dediziertes Fenster zur Verwaltung der Vokabel-Datenbank.
+Dies verbessert die Wartbarkeit und Erweiterbarkeit der Vokabelliste erheblich.
+
+ Neu in SpT8: Vokabel-Manager
+Die zentrale Neuerung in dieser Version ist die Implementierung der Klasse VocabManager und deren Integration in das Hauptprogramm.
+
+1. Dedizierte Vokabelverwaltung
+Neue Klasse VocabManager: Eine unabhängige Toplevel-GUI wurde hinzugefügt, die eine direkte Interaktion mit der Datenbank ermöglicht.
+
+Funktionen: Der Manager bietet eine Treeview-Ansicht aller gespeicherten Vokabeln und erlaubt die Bearbeitung und Löschung einzelner Einträge.
+
+2. Integration und Hotkeys
+Hotkey: Der Manager kann schnell über den neuen globalen Hotkey Ctrl + V (V wie Vokabeln) aufgerufen werden.
+
+UI-Button: Ein neuer Button "Vokabeln verwalten (Ctrl+V)" wurde im Hauptfenster über dem Bereich "Manuelle Abfrage" hinzugefügt, um die Funktion direkt zugänglich zu machen.
+
+Modales Fenster: Das Manager-Fenster ist modal, d.h., es blockiert die Interaktion mit dem Hauptfenster, bis es geschlossen wird, um Datenkonsistenz zu gewährleisten.
+Nach dem Schließen des Managers wird die Übungsrunde im Hauptfenster automatisch aktualisiert.
+
+3. Code-Anpassungen
+
+Aktualisierte Hotkeys: Die Hotkeys des Hauptprogramms (z. B. Sprachwechsel, Fullscreen ) bleiben erhalten.
+
+
+UI-Anpassung: Der UI-Code in VocabularyTrainer.create_widgets wurde angepasst, um Platz für den neuen Management-Button zu schaffen.
+
+Datenbank-Interaktion: Die VocabManager-Klasse kapselt die gesamte CRUD-Logik (Create, Read, Update, Delete) für die vocabulary-Tabelle.
+
+ SpT7 Basis-Funktionen (Unverändert)
+GUI-Basis: Tkinter (Desktop-Anwendung).
+
+Datenhaltung: SQLite-Datenbank (vokabeln.db).
+
+Erweiterungen: Optionale Online-Übersetzung (Googletrans) und Sprachausgabe (pyttsx3).
+
+Interaktion:
+
+Space zum Abrufen des nächsten Wortes.
+
+
+F11 zum Umschalten des Fullscreen-Modus.
+
+
+Ctrl+Q zum Beenden der Anwendung.
+
+Ctrl + [E, I, S, F] für den schnellen Sprachpaarwechsel.
+
+Startup: Fullscreen Splash Screen beim Start.
+
+##################################################################################################################################################################################################################################
